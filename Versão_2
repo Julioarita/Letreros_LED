@@ -1,0 +1,128 @@
+/* Projeto para a construção de um letrero LED 
+
+    Autor: REJ Electronics
+    
+    Desenho e Programação: Eduardo Valdes
+    
+    24 de Janeiro de 2019                     */
+
+
+/*
+unsigned char letra[4][16] = {{0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+                              {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+                              {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+                              {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+                              };    */
+                              
+unsigned char letra[4][16] = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE},
+                              {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE},
+                              {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE},
+                              {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE},
+                              };
+  
+  
+/* Declaração das variáveis*/
+unsigned int mask = 0x01;         // Comparador Lógico para leitura
+unsigned int temporal;
+unsigned int temporal_anterior;
+bit flag;
+
+/* Statement of Functions*/
+void print();
+
+
+void main() {
+
+CMCON = 0x07;            // Desabilita os comparadores  internos
+
+ADON_bit = 0x00;         // Desabilita os conversores A/D
+ADCON1 = 0x0F;           // Todo os portos como pinos digitais (Entradas ou Saídas)
+
+/* Declaração da interrupção */
+/*---------------------------*/
+IPEN_bit = 0x00;         // Desabilita os nives de prioridade
+GIE_bit = 0x01;          //  Abilita as interrupções globais
+PEIE_bit = 0x00;         // Desabilita as interrupções por periféricos
+INT0IE_bit = 0x01;       // Abilita as interrupções externas INT0
+INTEDG0_bit = 0x01;      // Configura a interrupção por borda de subida
+
+TRISA = 0x00;            // Estabelece todo o PORTA como saída digital
+PORTA = 0x00;            // Inicializa o PORTA em nivel baixo
+
+TRISB = 0x00;
+PORTB = 0xFF;
+
+while (1){
+unsigned int j,i,k;
+      for(i = 0; i<4; i++){
+              for(j = 0; j<16; j++){
+                     temporal_anterior = letra[i][j];
+                            for(k = 0; k<8; k++){
+                                      temporal =  temporal_anterior;
+                                      flag = temporal & mask;
+                                           if(flag == 0){
+                                                       RA4_bit = 0x00;
+                                           } else {
+                                                       RA4_bit = 0x01;
+                                           }
+                                                  RA2_bit = 0x00;      // Cria o sinal de clock para atualizar o estado de cada registro dos chips
+                                                  RA2_bit = 0x01;
+                                                  temporal_anterior = temporal_anterior >> 1;
+                            }  // Fim da revisão dos Bytes
+              
+              }   // Fim da revisão das colunas da matrix
+              
+              switch (i){
+                      case 0:
+                           RA0_bit = 0x00;
+                           RA1_bit = 0x00;
+                      break;
+                      case 1:
+                           RA0_bit = 0x01;
+                           RA1_bit = 0x00;
+                      break;
+                      case 2:
+                           RA0_bit = 0x00;
+                           RA1_bit = 0x01;
+                      break;
+                      case 3:
+                           RA0_bit = 0x01;
+                           RA1_bit = 0x01;
+                      break;
+                      
+              }// Fim loop switch
+                      print();
+                      RA3_bit = 0x00;      // Cria o sinal de clock para enviar a atualização a todos os chips
+                      RA3_bit = 0x01;
+                      Delay_ms(500);
+      
+      }     // Fim da revisão das filas da matrix
+
+
+
+}// loop infinito
+}// End Void Main
+
+
+void print(){
+  unsigned int j = 0;
+  unsigned int i = 0;
+  int temporal;
+  int temporal_1;
+     for(i = 0; i < 4; i++){
+              for(j = 0; j < 16; j++){
+                    if(j == 0){
+                        temporal = letra[i][14 - j];
+                        letra [i][14 - j] = letra[i][15 - j];
+                        } else if(j == 15){
+                                     temporal_1 = letra[i][j];
+                                     letra [i][j] = temporal;
+                                     temporal = temporal_1;
+                        } else {
+                            temporal_1 =  letra[i][14 - j];
+                            letra[i][14 - j] = temporal;
+                            temporal = temporal_1;
+                        }
+              }
+     }
+}// End Print Function
